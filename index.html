@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ar" dir="rtl" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
@@ -1008,9 +1008,10 @@ Reply ONLY with valid JSON, no extra text, no backticks:
                             this.wizardSentences = parsed.sentences || [];
                             this.loadMsg = 'جاري رسم الصورة... 🎨';
                             this.imgLoading = true;
-                            const imgP = encodeURIComponent((parsed.imageDesc || 'Pixar 3D robot teacher ' + this.topicDetails + ' educational colorful') + ', 4K high quality');
+                            const cleanTopic = this.topicDetails.replace(/[^\w\s]/g,'').trim().substring(0,40);
+                            const simpleImg = `Pixar 3D cute robot teacher Bibo, ${this.subject}, ${cleanTopic}, colorful classroom, cinematic lighting, child friendly, 4K`;
                             const seed = Math.floor(Math.random() * 99999);
-                            this.wizardImageUrl = 'https://image.pollinations.ai/prompt/' + imgP + '?width=800&height=450&seed=' + seed + '&nologo=true&model=flux';
+                            this.wizardImageUrl = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(simpleImg) + '?width=800&height=450&seed=' + seed + '&nologo=true&model=flux&enhance=true';
                         } catch(e) { this.wizardPrompt = '⚠️ خطأ: ' + e.message; }
                         this.isLoading = false; this.isSubmitted = true;
                     },
@@ -1573,7 +1574,7 @@ Reply ONLY with valid JSON, no extra text, no backticks:
         renderSentences(generatedContent.sentences);
     }
 
-    // ─── Pollinations Image (مجاني — بدون مفتاح) ──────
+    // ─── Pollinations Image ───────────────────────────
     function generateImage(subject, topic) {
         setLoadingMsg('جاري رسم الصورة... 🎨');
 
@@ -1584,20 +1585,30 @@ Reply ONLY with valid JSON, no extra text, no backticks:
         imgEl.classList.add('hidden');
         dlBtn.classList.add('hidden');
         loadEl.classList.remove('hidden');
+        loadEl.innerHTML = `<div class="text-center space-y-2 py-8">
+            <div class="w-10 h-10 mx-auto rounded-full border-2 border-neonBlue/30 border-t-neonBlue animate-spin"></div>
+            <p class="text-slate-400 text-xs badge-ar">جاري توليد الصورة...</p>
+        </div>`;
 
-        const basePrompt = currentImagePrompt ||
-            `${subject} educational scene, cute robot teacher Bibo, Pixar 3D style, colorful classroom, ${topic}`;
-
-        const fullPrompt = encodeURIComponent(
-            basePrompt + ', Pixar 3D render, vibrant colors, child-friendly, cinematic lighting, 4K, high quality'
-        );
+        // برومبت مبسط وقصير للصورة
+        const cleanTopic = topic.replace(/[^\w\s]/g, '').trim().substring(0, 40);
+        const cleanSubject = subject.replace(/[^\w\s]/g, '').trim().substring(0, 20);
+        const simplePrompt = `Pixar 3D cute robot teacher Bibo, ${cleanSubject} lesson, ${cleanTopic}, colorful classroom, cinematic lighting, child friendly, vibrant colors, 4K`;
 
         const seed = Math.floor(Math.random() * 99999);
-        const imageUrl = `https://image.pollinations.ai/prompt/${fullPrompt}?width=800&height=500&seed=${seed}&nologo=true&model=flux`;
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(simplePrompt)}?width=800&height=500&seed=${seed}&nologo=true&model=flux&enhance=true`;
 
         imgEl.src    = imageUrl;
         dlBtn.href   = imageUrl;
         dlBtn.download = 'bibo-gen.jpg';
+
+        // timeout لو الصورة فضلت تحمل أكتر من 30 ثانية
+        const timeout = setTimeout(() => {
+            if (imgEl.classList.contains('hidden')) imageError();
+        }, 30000);
+
+        imgEl.onload  = () => { clearTimeout(timeout); imageLoaded(); };
+        imgEl.onerror = () => { clearTimeout(timeout); imageError(); };
     }
 
     function imageLoaded() {
